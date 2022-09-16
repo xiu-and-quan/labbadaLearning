@@ -185,6 +185,7 @@ public class StreamDemo {
         //获取一个Map集合，map的key为作者名，value为List<Book>
         //toMap需要两个参数 map分为键值对的
         authors.stream()
+                .distinct()
                 .collect(Collectors.toMap(new Function<Author, String>() {
                     @Override
                     public String apply(Author author) {
