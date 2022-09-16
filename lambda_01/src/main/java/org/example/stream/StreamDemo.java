@@ -1,6 +1,10 @@
 package org.example.stream;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StreamDemo {
@@ -14,21 +18,214 @@ public class StreamDemo {
         // public static<T> Stream<T> of(T... values) {
         //        return Arrays.stream(values);
         //    }
-        //对于map集合
-        
-        authors.stream() //把集合转换成流
-                .distinct() //去重
-                .filter(author -> author.getAge()<18) //过滤器  留下年龄小于18的留在流中
-                //打印
+        //对于map集合 双列集合需要转成单列集合后再用流
+
+        //单列集合
+//        authors.stream() //把集合转换成流
+//                .distinct() //去重
+//                .filter(author -> author.getAge()<18) //过滤器  留下年龄小于18的留在流中
+//                //打印
+//                .forEach(author -> System.out.println(author.getName()));
+        //双列集合
+        //mapStreamTest();
+
+        //过滤器filter的使用
+        authors.stream().filter(new Predicate<Author>() {
+            @Override
+            public boolean test(Author author) {
+                return author.getName().length()>1;
+            }
+        }).forEach(new Consumer<Author>() {
+            @Override
+            public void accept(Author author) {
+                System.out.println(author.getName());
+            }
+        });
+
+        //中间件map 主要用于堆流中的元素进行计算和转换 重要
+        mapTest();
+
+        //去重
+//        Author author3 = new Author(3L,"易",14,"是这个世界在限制他的思维",null);
+//        Author author4 = new Author(3L,"易",14,"是这个世界在限制他的思维",null);
+//        boolean res = author3.equals(author4);
+//        System.out.println(res);
+
+        //sort 排序  如果调用空参的sorted，需要将比较的类需要实现compareAble接口，实现比较方法
+        authors.stream().
+                distinct().
+                sorted(new Comparator<Author>() {
+            @Override
+            public int compare(Author o1, Author o2) {
+                return o2.getAge()-o1.getAge();
+            }
+        }).forEach(new Consumer<Author>() {
+                    @Override
+                    public void accept(Author author) {
+                        System.out.println(author.getName()+"========"+author.getAge());
+                    }
+                });
+        System.out.println("======================LIMIT======================");
+        //limit
+        //对流中的数据按照年龄降序，并且去重，打印其中年龄最大的两个作家
+        authors.stream().
+                distinct().
+                sorted(new Comparator<Author>() {
+            @Override
+            public int compare(Author o1, Author o2) {
+                return o2.getAge()-o1.getAge();
+            }
+        }).limit(2)
+                .forEach(new Consumer<Author>() {
+                    @Override
+                    public void accept(Author author) {
+                        System.out.println(author.getName()+"===="+author.getAge());
+                    }
+                });
+        System.out.println("======================SKIP======================");
+        //skip 跳过前n个打印
+        //打印除了年龄最大的其他作家
+        authors.stream()
+                .distinct()
+                .sorted(new Comparator<Author>() {
+                    @Override
+                    public int compare(Author o1, Author o2) {
+                        return o2.getAge()-o1.getAge();
+                    }
+                })
+                .skip(1)
+                .forEach(new Consumer<Author>() {
+                    @Override
+                    public void accept(Author author) {
+                        System.out.println(author.getName()+"===="+author.getAge());
+                    }
+                });
+        System.out.println("======================flatMap======================");
+        //flatMap map是可以将数据进行类型转换 map只能将一个对象转换成另一个对象作为流中的元素
+        //flatMap 可以把一个对象转换成多个对象作为流中的元素
+        //打印所有作家的书籍 每个作家里面有很多书籍
+        //用map的问题
+        System.out.println("======================Map的方法======================");
+        authors.stream().map(author -> author.getBooks())
+                .forEach(new Consumer<List<Book>>() {
+                    @Override
+                    public void accept(List<Book> books) {
+                        //这里面是List
+                        books.forEach(new Consumer<Book>() {
+                            @Override
+                            public void accept(Book book) {
+                                System.out.println(book.getName());
+                            }
+                        });
+                    }
+                });
+        System.out.println("======================flatMap的方法======================");
+        authors.stream()
+                .flatMap(author -> author.getBooks().stream())//flatMap 可以把一个对象转换成多个对象作为流中的元素
+                .distinct()
+                .forEach(book -> System.out.println(book.getName()));
+        System.out.println("======================flatMap的方法-分类======================");
+        //分类
+        authors.stream()
+                .flatMap(author -> author.getBooks().stream())
+                .distinct()
+                .flatMap(book -> Arrays.stream(book.getCategory().split(",")))//public String[] split() split方法是返回字符串数组的 然后把数组转成流 调用Arrays.stream()
+                .distinct()
+                .forEach(System.out::println);
+
+        //终结操作
+        //输出所有作家的名字
+        System.out.println("======================foreach的方法-输出作家的名字======================");
+        authors.stream()
+                .distinct()
                 .forEach(author -> System.out.println(author.getName()));
+        System.out.println("======================foreach的方法map-输出作家的名字======================");
+        authors.stream()
+                .map(author -> author.getName())
+                .distinct()
+                .forEach(name->{
+                    System.out.println(name);
+                });
+        System.out.println("======================count的方法-输出作家的名字======================");
+        //count 获取当前流中的元素
+        Long count = authors.stream()
+                .flatMap(author -> author.getBooks().stream())
+                .distinct()
+                .count();//count()有返回值 需要接收
+        System.out.println(count);
+        System.out.println("======================max&min的方法======================");
+        //max&min求流中的最值
+        //分别获取这些作家的所出书籍的最高分和最低分并打印。
+        //最大值
+        Optional<Integer> max = authors.stream()
+                .flatMap(author -> author.getBooks().stream())
+                .map(book -> book.getScore())
+                .max((o1, o2) -> o1 - o2);
+        System.out.println(max.get());
+        System.out.println("======================collect的方法转成toList======================");
+        //collect把流转成集合 重要
+        //获取一个存放所有作者名字的List集合
+        List<String> resList = authors.stream()
+                .map(new Function<Author, String>() {
+                    @Override
+                    public String apply(Author author) {
+                        return author.getName();
+                    }
+                })
+                .collect(Collectors.toList());//用的工具类Collectors
+        System.out.println(resList);
+        System.out.println("======================collect的方法转成Set======================");
+        //获取一个所有书名的Set集合。
+        Set<Book> resSet = authors.stream()
+                .flatMap(author -> author.getBooks().stream())
+                .collect(Collectors.toSet());
+        System.out.println(resSet);
+
+        System.out.println("======================collect的方法转成Map集合======================");
+        //获取一个Map集合，map的key为作者名，value为List<Book>
+        //toMap需要两个参数 map分为键值对的
+        authors.stream()
+                .collect(Collectors.toMap(new Function<Author, String>() {
+                    @Override
+                    public String apply(Author author) {
+                        return author.getName();
+                    }
+                }, new Function<Author, List<Book>>() {
+                    @Override
+                    public List<Book> apply(Author author) {
+                        return author.getBooks();
+                    }
+                }))
     }
+
+    //中间件map 主要用于堆流中的元素进行计算和转换 重要
+    public static void mapTest(){
+        //打印所有作家的姓名
+        List<Author> authors = getAuthors();
+        //可以连续使用
+        authors.stream().map(author -> author.getAge()).map(age->age+10).forEach(x -> System.out.println(x));
+    }
+
     
     public static void mapStreamTest(){
         Map<String,Integer> map = new HashMap<>();
         map.put("xiu",18);
         map.put("quan",19);
         map.put("li",27);
+        //Set是单列集合
         Set<Map.Entry<String, Integer>> entrySet = map.entrySet();
+        entrySet.stream().filter(new Predicate<Map.Entry<String, Integer>>() {
+            @Override
+            public boolean test(Map.Entry<String, Integer> stringIntegerEntry) {
+                return stringIntegerEntry.getValue()>18;
+            }
+        })
+                .forEach(new Consumer<Map.Entry<String, Integer>>() {
+                    @Override
+                    public void accept(Map.Entry<String, Integer> stringIntegerEntry) {
+                        System.out.println(stringIntegerEntry.getKey()+"======="+stringIntegerEntry.getValue());
+                    }
+                });
 
     }
     private static List<Author> getAuthors() {
