@@ -187,7 +187,6 @@ public class StreamDemo {
                 .findFirst();
 
         first.ifPresent(author -> System.out.println(author.getName()));
-
     }
 
     private static void test21() {

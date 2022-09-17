@@ -196,7 +196,40 @@ public class StreamDemo {
                     public List<Book> apply(Author author) {
                         return author.getBooks();
                     }
-                }))
+                }));
+
+        System.out.println("======================anyMatch======================");
+        //        判断是否有年龄在29以上的作家 判断是否有大于29的
+        boolean booleanRes = authors.stream()
+                .anyMatch(author -> author.getAge()>29);
+        System.out.println(booleanRes);
+
+        System.out.println("======================allMatch======================");
+        //        判断是否所有的作家都大于18 判断所有的元素都是否大于18
+        boolean booleanRes1 = authors.stream()
+                .anyMatch(new Predicate<Author>() {
+                    @Override
+                    public boolean test(Author author) {
+                        return author.getAge()>18;
+                    }
+                });
+        System.out.println(booleanRes1);
+        System.out.println("======================noneMatch======================");
+        //都不符合         判断作家是否都没有超过100岁的。none是相反 <=100 反过来就是，100
+        authors.stream()
+                .noneMatch(new Predicate<Author>() {
+                    @Override
+                    public boolean test(Author author) {
+                        return author.getAge()>100;
+                    }
+                });
+
+        System.out.println("======================findAny======================");
+        //        获取任意一个年龄大于18的作家，如果存在就输出他的名字  获取流中的任意一个元素的
+        Optional<Author> any = authors.stream()
+                .filter(author -> author.getAge()>18)
+                .findAny();
+
     }
 
     //中间件map 主要用于堆流中的元素进行计算和转换 重要
@@ -228,6 +261,53 @@ public class StreamDemo {
                     }
                 });
 
+    }
+    //findFirst获取流中的第一个元素
+    private static void test22() {
+//        获取一个年龄最小的作家，并输出他的姓名。
+        List<Author> authors = getAuthors();
+        Optional<Author> first = authors.stream()
+                .sorted((o1, o2) -> o1.getAge() - o2.getAge())
+                .findFirst();
+
+        first.ifPresent(author -> System.out.println(author.getName()));
+    }
+    //reduce 第一个是初始值，里面的两个参数一个初始值和另一个是做相关运算，然后输出结果
+    private static void test23() {
+//        使用reduce求所有作者年龄的和
+        List<Author> authors = getAuthors();
+        Integer sum = authors.stream()
+                .distinct()
+                .map(author -> author.getAge())
+                .reduce(0, (result, element) -> result + element);
+        System.out.println(sum);
+    }
+
+    private static void test24() {
+//        使用reduce求所有作者中年龄的最大值
+        List<Author> authors = getAuthors();
+        Integer max = authors.stream()
+                .map(author -> author.getAge())
+                .reduce(Integer.MIN_VALUE, (result, element) -> result < element ? element : result);
+
+        System.out.println(max);
+    }
+    private static void test25() {
+//        使用reduce求所有作者中年龄的最小值
+        List<Author> authors = getAuthors();
+        Integer min = authors.stream()
+                .map(author -> author.getAge())
+                .reduce(Integer.MAX_VALUE, (result, element) -> result > element ? element : result);
+        System.out.println(min);
+    }
+    private static void test26() {
+
+        //        使用reduce求所有作者中年龄的最小值
+        List<Author> authors = getAuthors();
+        Optional<Integer> minOptional = authors.stream()
+                .map(author -> author.getAge())
+                .reduce((result, element) -> result > element ? element : result);
+        minOptional.ifPresent(System.out::println);
     }
     private static List<Author> getAuthors() {
         //数据初始化
